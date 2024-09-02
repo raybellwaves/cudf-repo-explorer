@@ -614,6 +614,7 @@ def create_vector_db(
 
 
 def st_dashboard():
+    # streamlit run main.py
     from streamlit_folium import st_folium
     import pandas as pd
     import folium
