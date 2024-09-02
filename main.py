@@ -489,9 +489,7 @@ def create_df(
                             {
                                 f"{content_type[:-1]}_comment_body": [""],
                                 f"{content_type[:-1]}_comment_created_at": [
-                                    pd.Timestamp(
-                                        "2000-01-01", tz="UTC"
-                                    )
+                                    pd.Timestamp("2000-01-01", tz="UTC")
                                 ],
                                 f"{content_type[:-1]}_comment_user_login": [""],
                             }
@@ -518,7 +516,9 @@ def create_df(
                         how="left",
                     )
                     for col in USER_COLUMNS:
-                        _df[f"{content_type[:-1]}_comment_user_{col}"] = _df[f"user_{col}"]
+                        _df[f"{content_type[:-1]}_comment_user_{col}"] = _df[
+                            f"user_{col}"
+                        ]
                         del _df[f"user_{col}"]
 
                     df = pd.concat([df, _df], axis=0).reset_index(drop=True)
@@ -541,10 +541,16 @@ def create_vector_db(
 
     for state in states:
         for content_type in content_types:
-            if not os.path.exists(f"{SNAPSHOT_FOLDER}/milvus_{state}_{content_type}.db"):
+            if not os.path.exists(
+                f"{SNAPSHOT_FOLDER}/milvus_{state}_{content_type}.db"
+            ):
                 print(f"Creating vector db for {state} {content_type}")
-                client = MilvusClient(f"{SNAPSHOT_FOLDER}/milvus_{state}_{content_type}.db")
-                df = pd.read_parquet(f"{SNAPSHOT_FOLDER}/{state}_{content_type}.parquet")
+                client = MilvusClient(
+                    f"{SNAPSHOT_FOLDER}/milvus_{state}_{content_type}.db"
+                )
+                df = pd.read_parquet(
+                    f"{SNAPSHOT_FOLDER}/{state}_{content_type}.parquet"
+                )
                 if not df.empty:
                     if content_type == "issues":
                         _df = df[
@@ -576,12 +582,14 @@ def create_vector_db(
                             _df[f"{content_type[:-1]}_body"].fillna("").values
                         )  # ndocs x 1536
                         with open(
-                            f"{SNAPSHOT_FOLDER}/{state}_{content_type}_embeddings.pkl", "wb"
+                            f"{SNAPSHOT_FOLDER}/{state}_{content_type}_embeddings.pkl",
+                            "wb",
                         ) as f:
                             pickle.dump(embeddings, f)
                     else:
                         with open(
-                            f"{SNAPSHOT_FOLDER}/{state}_{content_type}_embeddings.pkl", "rb"
+                            f"{SNAPSHOT_FOLDER}/{state}_{content_type}_embeddings.pkl",
+                            "rb",
                         ) as f:
                             embeddings = pickle.load(f)
                     data = [
@@ -615,6 +623,7 @@ def st_dashboard():
     from langchain_google_genai import ChatGoogleGenerativeAI
     from langchain_experimental.agents import create_pandas_dataframe_agent
     from langchain_openai import OpenAI as OpenAI_langchain
+    from shapely.errors import GEOSException
     import geopandas as gpd
     import matplotlib.pyplot as plt
     import streamlit as st
@@ -622,7 +631,9 @@ def st_dashboard():
     st.title(f"{REPO} GitHub explorer")
 
     st.markdown(
-        """
+        f"""
+    The data for this dashboard can be found at https://github.com/raybellwaves/{REPO}-repo-explorer
+
     This dashboard can help with a variety of personas:
     - Product Manager: Identification of users/leads.
     - Developer Advocate / Solutions Architect: Identify common developer pain points.
@@ -717,30 +728,35 @@ def st_dashboard():
     )
     m = gdf.explore()
     for idx, row in gdf.iterrows():
-        icon = CustomIcon(
-            icon_image=row["user_avatar_url"], icon_size=(30, 30), icon_anchor=(15, 15)
-        )
-        popup = f"""
-        <b>{row['user_name']}</b><br>
-        <b>Bio:</b> {row['user_bio']}<br>
-        <b>Blog:</b> <a href="{row['user_blog']}" target="_blank">{row['user_blog']}</a><br>
-        <b>Company:</b> {row['user_company']}<br>
-        <b>Created at:</b> {row['user_created_at']}<br>
-        <b>Email:</b> {row['user_email']}<br>
-        <b>Followers:</b> {row['user_followers']}<br>
-        <b>Following:</b> {row['user_following']}<br>
-        <b>GitHub:</b> <a href="{row['user_html_url']}" target="_blank">{row['user_html_url']}</a><br>
-        <b>Location:</b> {row['user_location']}<br>
-        <b>Coordinates:</b> {row['user_location_lat']}, {row['user_location_lon']}<br>
-        <b>Login:</b> {row['user_login']}<br>
-        <b>Twitter:</b> {row['user_twitter_username'] if row['user_twitter_username'] else 'N/A'}<br>
-        <b>Updated at:</b> {row['user_updated_at']}
-        """
-        folium.Marker(
-            location=[row.geometry.y, row.geometry.x],
-            popup=folium.Popup(popup, max_width=300),
-            icon=icon,
-        ).add_to(m)
+        try:
+            icon = CustomIcon(
+                icon_image=row["user_avatar_url"],
+                icon_size=(30, 30),
+                icon_anchor=(15, 15),
+            )
+            popup = f"""
+            <b>{row['user_name']}</b><br>
+            <b>Bio:</b> {row['user_bio']}<br>
+            <b>Blog:</b> <a href="{row['user_blog']}" target="_blank">{row['user_blog']}</a><br>
+            <b>Company:</b> {row['user_company']}<br>
+            <b>Created at:</b> {row['user_created_at']}<br>
+            <b>Email:</b> {row['user_email']}<br>
+            <b>Followers:</b> {row['user_followers']}<br>
+            <b>Following:</b> {row['user_following']}<br>
+            <b>GitHub:</b> <a href="{row['user_html_url']}" target="_blank">{row['user_html_url']}</a><br>
+            <b>Location:</b> {row['user_location']}<br>
+            <b>Coordinates:</b> {row['user_location_lat']}, {row['user_location_lon']}<br>
+            <b>Login:</b> {row['user_login']}<br>
+            <b>Twitter:</b> {row['user_twitter_username'] if row['user_twitter_username'] else 'N/A'}<br>
+            <b>Updated at:</b> {row['user_updated_at']}
+            """
+            folium.Marker(
+                location=[row.geometry.y, row.geometry.x],
+                popup=folium.Popup(popup, max_width=300),
+                icon=icon,
+            ).add_to(m)
+        except GEOSException:
+            pass
     st_folium(m, width=900)
 
     st.markdown("Click on a member to find out more information about them.")
@@ -854,13 +870,8 @@ def run_all(
 
 
 if __name__ == "__main__":
-    """
-    Example
-    -------
-    python main.py run_all --states open closed --content_types issues prs --verbose True
-
-    python main.py create_vector_db --states open closed --content_types issues prs
-    """
+    # python main.py run_all --states open closed --content_types issues prs --verbose True
+    # python main.py create_vector_db --states open closed --content_types issues prs
     import sys
 
     if len(sys.argv) == 1:
